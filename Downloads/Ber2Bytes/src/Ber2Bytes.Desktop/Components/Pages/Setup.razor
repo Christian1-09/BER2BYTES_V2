@@ -1,0 +1,104 @@
+@page "/setup"
+@layout EmptyLayout
+@inject AuthService Auth
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+@* One-time administrator registration. Only shown when the database has no accounts yet. *@
+@if (_ready)
+{
+    <div class="login">
+        <AuthBrandPanel />
+
+        <section class="login-right" style="overflow-y:auto">
+            <div class="login-card" style="max-width:520px;padding:24px 0">
+                <div class="brand" style="margin-bottom:12px"><BrandLogo Size="side" OnDark="false" /></div>
+                <h1 style="margin-bottom:6px">Welcome! Create the Administrator Account</h1>
+                <p class="muted" style="text-align:center;margin-bottom:22px">
+                    This is done only once, the first time the system is opened.
+                    The administrator can then add staff accounts in User Management.
+                </p>
+
+                @if (_error != null)
+                {
+                    <div class="form-error"><Icon Name="alert-circle" />@_error</div>
+                }
+
+                <div class="form-grid">
+                    <div class="fg full">
+                        <label>Full Name <span class="req">*</span></label>
+                        <input id="reg-name" placeholder="e.g. Juan Dela Cruz" @bind="_f.FullName" />
+                    </div>
+                    <div class="fg full">
+                        <label>Username <span class="req">*</span></label>
+                        <input placeholder="e.g. admin" autocomplete="off" spellcheck="false" @bind="_f.Username" />
+                        <span class="hint">3–30 characters: letters, numbers, dot or underscore</span>
+                    </div>
+                    <div class="fg">
+                        <label>Password <span class="req">*</span></label>
+                        <div class="pw-field">
+                            <input type="@(_showPw ? "text" : "password")" autocomplete="new-password" @bind="_f.Password" />
+                            <button type="button" class="eye" title="Show / hide" @onclick="() => _showPw = !_showPw"><Icon Name="@(_showPw ? "eye" : "eye-off")" /></button>
+                        </div>
+                        <span class="hint">At least @PasswordRules.MinLength characters</span>
+                    </div>
+                    <div class="fg">
+                        <label>Confirm Password <span class="req">*</span></label>
+                        <input type="@(_showPw ? "text" : "password")" autocomplete="new-password" @bind="_f.ConfirmPassword" />
+                    </div>
+
+                    <div class="fg full"><div class="sec" style="margin:6px 0 0">For "Forgot password?"</div></div>
+                    <SecurityQuestionPicker @bind-Question="_f.SecurityQuestion" @bind-Answer="_f.SecurityAnswer" />
+                </div>
+
+                <button class="login-btn" style="margin-top:22px" disabled="@_busy" @onclick="Register">
+                    <Icon Name="check" />@(_busy ? "Creating account…" : "Create Account & Sign In")
+                </button>
+                <div class="login-foot"><Icon Name="lock" Class="sm" />Passwords and answers are stored encrypted (hashed) on this computer only.</div>
+            </div>
+            <div class="login-corner"></div>
+        </section>
+    </div>
+}
+
+@code {
+    private readonly RegisterAdminForm _f = new();
+    private bool _ready;
+    private bool _busy;
+    private bool _showPw;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Registration is allowed only once: if any account exists, go to the login screen.
+        if (!await Auth.IsSetupRequiredAsync())
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+        _ready = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_ready && !_focused)
+        {
+            _focused = true;
+            await JS.InvokeVoidAsync("b2b.focus", "reg-name");
+        }
+    }
+    private bool _focused;
+
+    private async Task Register()
+    {
+        _busy = true;
+        _error = await Auth.RegisterAdminAsync(_f);
+        _busy = false;
+        if (_error != null)
+        {
+            if (!await Auth.IsSetupRequiredAsync()) Nav.NavigateTo("/login"); // already registered
+            return;
+        }
+        Nav.NavigateTo("/");
+    }
+}

@@ -1,0 +1,12 @@
+@inject SettingsService Settings
+
+@* Left side of the login and registration screens. Put your photo at wwwroot/images/login-hero.jpg *@
+<section class="login-left">
+    <div class="brand">
+        <BrandLogo Size="big" OnDark="true" />
+        <div class="accent-line"></div>
+        <h2 class="tagline-title">Automated Inventory and<br />Sales Tracking System</h2>
+        <p class="tagline">Smarter Inventory. Better Sales. Stronger Business.</p>
+    </div>
+    <div class="branch"><Icon Name="pin" Class="lg" />@Settings.Current.BranchName</div>
+</section>

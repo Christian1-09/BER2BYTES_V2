@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    APPLICATION LAYER
+    The use cases of the system (login, setup, sell, receive stock, returns, reports, ...).
+    It only knows the Domain and the interfaces in /Abstractions. The real implementations
+    (SQLite, BCrypt, PDF/Excel, Windows dialogs) are plugged in by Infrastructure and Desktop.
+    EF Core (without any database provider) is referenced only for LINQ queries over IAppDbContext.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Ber2Bytes.Application</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ber2Bytes.Domain\Ber2Bytes.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.*" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Ber2Bytes.Domain.Entities" />
+    <Using Include="Ber2Bytes.Domain.Enums" />
+    <Using Include="Ber2Bytes.Application.Abstractions" />
+    <Using Include="Ber2Bytes.Application.Common" />
+    <Using Include="Ber2Bytes.Application.Security" />
+    <Using Include="Microsoft.EntityFrameworkCore" />
+    <Using Include="Ber2Bytes.Application.Features.Auth" />
+    <Using Include="Ber2Bytes.Application.Features.Catalog" />
+    <Using Include="Ber2Bytes.Application.Features.Inventory" />
+    <Using Include="Ber2Bytes.Application.Features.Sales" />
+    <Using Include="Ber2Bytes.Application.Features.Returns" />
+    <Using Include="Ber2Bytes.Application.Features.Reports" />
+    <Using Include="Ber2Bytes.Application.Features.Dashboard" />
+    <Using Include="Ber2Bytes.Application.Features.Users" />
+    <Using Include="Ber2Bytes.Application.Features.Audit" />
+    <Using Include="Ber2Bytes.Application.Features.Settings" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    INFRASTRUCTURE LAYER
+    Technical details behind the Application interfaces:
+    SQLite database (EF Core), BCrypt password hashing, PDF (QuestPDF) and Excel (ClosedXML)
+    reports, error log, per-computer preferences and backups.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Ber2Bytes.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ber2Bytes.Application\Ber2Bytes.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.*" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.*" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="ClosedXML" Version="0.105.*" />
+    <PackageReference Include="QuestPDF" Version="2025.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Ber2Bytes.Domain.Entities" />
+    <Using Include="Ber2Bytes.Domain.Enums" />
+    <Using Include="Ber2Bytes.Application.Abstractions" />
+    <Using Include="Ber2Bytes.Application.Common" />
+  </ItemGroup>
+
+</Project>

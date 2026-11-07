@@ -1,0 +1,54 @@
+@* Choose a preset security question (or write your own) and type the answer. *@
+<div class="fg full">
+    <label>Security Question <span class="req">*</span></label>
+    <select value="@_selected" @onchange="OnSelect">
+        <option value="">Choose a question…</option>
+        @foreach (var q in SecurityQuestions.Presets)
+        {
+            <option value="@q">@q</option>
+        }
+        <option value="@Custom">Write my own question…</option>
+    </select>
+</div>
+@if (_selected == Custom)
+{
+    <div class="fg full">
+        <label>Your Question <span class="req">*</span></label>
+        <input placeholder="e.g. What was the name of my first store?" value="@Question" @oninput="e => SetQuestion(e.Value?.ToString())" />
+    </div>
+}
+<div class="fg full">
+    <label>Answer <span class="req">*</span></label>
+    <div class="pw-field">
+        <input type="@(_showAnswer ? "text" : "password")" autocomplete="off" placeholder="Your answer" value="@Answer" @oninput="e => SetAnswer(e.Value?.ToString())" />
+        <button type="button" class="eye" title="Show / hide" @onclick="() => _showAnswer = !_showAnswer"><Icon Name="@(_showAnswer ? "eye" : "eye-off")" /></button>
+    </div>
+    <span class="hint">Remember this answer — you'll need it if you forget your password. Upper/lower case doesn't matter.</span>
+</div>
+
+@code {
+    private const string Custom = "__custom__";
+
+    [Parameter] public string Question { get; set; } = "";
+    [Parameter] public EventCallback<string> QuestionChanged { get; set; }
+    [Parameter] public string Answer { get; set; } = "";
+    [Parameter] public EventCallback<string> AnswerChanged { get; set; }
+
+    private string _selected = "";
+    private bool _showAnswer;
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrEmpty(Question))
+            _selected = SecurityQuestions.Presets.Contains(Question) ? Question : Custom;
+    }
+
+    private async Task OnSelect(ChangeEventArgs e)
+    {
+        _selected = e.Value?.ToString() ?? "";
+        await QuestionChanged.InvokeAsync(_selected == Custom ? "" : _selected);
+    }
+
+    private Task SetQuestion(string? v) => QuestionChanged.InvokeAsync(v ?? "");
+    private Task SetAnswer(string? v) => AnswerChanged.InvokeAsync(v ?? "");
+}

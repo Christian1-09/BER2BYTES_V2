@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!--
+    PRESENTATION LAYER (the app you run)
+    WPF window + BlazorWebView with all the screens (Razor components).
+    It is also the "composition root": App.xaml.cs wires Application + Infrastructure together.
+    Windows-only helpers (file dialogs, photo resizing) live in /Platform.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- A Windows SDK version is needed by WebView2 (Microsoft.Windows.SDK.NET) -->
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Ber2Bytes.Desktop</RootNamespace>
+    <AssemblyName>Ber2Bytes</AssemblyName>
+    <Product>Ber2Bytes Inventory and Sales Tracking System</Product>
+    <Version>2.0.0</Version>
+    <!-- Put your .ico file in wwwroot/images and uncomment:
+    <ApplicationIcon>wwwroot\images\app.ico</ApplicationIcon> -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ber2Bytes.Application\Ber2Bytes.Application.csproj" />
+    <ProjectReference Include="..\Ber2Bytes.Infrastructure\Ber2Bytes.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="10.0.*" />
+  </ItemGroup>
+
+  <!-- WPF projects don't import System.IO automatically -->
+  <ItemGroup>
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+</Project>

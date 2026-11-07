@@ -1,0 +1,247 @@
+@page "/login"
+@layout EmptyLayout
+@inject AuthService Auth
+@inject NavigationManager Nav
+@inject IUserPreferences Prefs
+@inject IJSRuntime JS
+
+@if (_ready)
+{
+    <div class="login">
+        <AuthBrandPanel />
+
+        <!-- RIGHT: sign-in form -->
+        <section class="login-right">
+            <div class="login-card">
+                <div class="brand"><BrandLogo Size="big" OnDark="false" /></div>
+                <h1>Automated Inventory and<br />Sales Tracking System</h1>
+
+                <form @onsubmit="SignIn" @onsubmit:preventDefault="true">
+                    <div class="field-icon">
+                        <Icon Name="user" />
+                        <input id="login-user" placeholder="Username" @bind="_username" autocomplete="off" spellcheck="false" />
+                    </div>
+                    <div class="field-icon">
+                        <Icon Name="lock" />
+                        <input id="login-pass" type="@(_showPassword ? "text" : "password")" placeholder="Password" @bind="_password" @onkeyup="CheckCaps" />
+                        <button type="button" class="eye" title="@(_showPassword ? "Hide password" : "Show password")" @onclick="() => _showPassword = !_showPassword">
+                            <Icon Name="@(_showPassword ? "eye" : "eye-off")" />
+                        </button>
+                    </div>
+                    @if (_capsOn)
+                    {
+                        <div class="caps-warn">⚠ Caps Lock is on</div>
+                    }
+                    <div class="login-row">
+                        <label class="check"><input type="checkbox" @bind="_remember" />Remember me</label>
+                        <button type="button" class="link" @onclick="OpenForgot">Forgot password?</button>
+                    </div>
+                    <button type="submit" class="login-btn" disabled="@_busy">
+                        <Icon Name="login" />@(_busy ? "Signing in…" : "Login")
+                    </button>
+                </form>
+
+                @if (_error != null)
+                {
+                    <div class="login-error"><Icon Name="x" />@_error</div>
+                }
+                @if (_info != null)
+                {
+                    <div class="login-info"><Icon Name="check" /><div>@_info</div></div>
+                }
+                <div class="login-foot"><Icon Name="database" Class="sm" />Works offline · Your data stays on this computer</div>
+            </div>
+            <div class="login-corner"></div>
+        </section>
+    </div>
+
+    <!-- ═══ FORGOT PASSWORD (security question) ═══ -->
+    @if (_forgotStep > 0)
+    {
+        <Modal Title="Forgot Password" Icon="key" Size="sm" OnClose="CloseForgot">
+            <ChildContent>
+                @if (_fError != null)
+                {
+                    <div class="form-error"><Icon Name="alert-circle" />@_fError</div>
+                }
+                @if (_forgotStep == 1)
+                {
+                    <p class="muted" style="margin-bottom:14px">Enter your username to see your security question.</p>
+                    <div class="fg">
+                        <label>Username</label>
+                        <input id="fp-user" autocomplete="off" @bind="_fUser" @bind:event="oninput" @onkeydown="ForgotUserKey" />
+                    </div>
+                }
+                else
+                {
+                    <div class="note"><Icon Name="key" /><div><b>@_fQuestion</b></div></div>
+                    <div class="form-grid">
+                        <div class="fg full">
+                            <label>Your Answer</label>
+                            <input id="fp-answer" type="password" autocomplete="off" @bind="_fAnswer" />
+                        </div>
+                        <div class="fg full">
+                            <label>New Password</label>
+                            <input type="password" autocomplete="new-password" @bind="_fNew" />
+                            <span class="hint">At least @PasswordRules.MinLength characters</span>
+                        </div>
+                        <div class="fg full">
+                            <label>Confirm New Password</label>
+                            <input type="password" autocomplete="new-password" @bind="_fConfirm" />
+                        </div>
+                    </div>
+                }
+                <p class="hint" style="margin-top:14px">No security question set? Ask your administrator to reset your password in User Management.</p>
+            </ChildContent>
+            <Footer>
+                <button class="btn ghost" @onclick="CloseForgot">Cancel</button>
+                @if (_forgotStep == 1)
+                {
+                    <button class="btn primary" disabled="@_busy" @onclick="FindQuestion">Next<Icon Name="chevron-right" /></button>
+                }
+                else
+                {
+                    <button class="btn primary" disabled="@_busy" @onclick="ResetPassword"><Icon Name="check" />Reset Password</button>
+                }
+            </Footer>
+        </Modal>
+    }
+}
+
+@code {
+    private bool _ready;
+    private string _username = "";
+    private string _password = "";
+    private bool _remember;
+    private bool _showPassword;
+    private bool _busy;
+    private bool _capsOn;
+    private string? _error;
+    private string? _info;
+
+    // Forgot password
+    private int _forgotStep; // 0 = closed, 1 = username, 2 = answer + new password
+    private string _fUser = "", _fAnswer = "", _fNew = "", _fConfirm = "";
+    private string? _fQuestion, _fError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Auth.IsLoggedIn)
+        {
+            Nav.NavigateTo("/");
+            return;
+        }
+        // Fresh install: the administrator must register first.
+        if (await Auth.IsSetupRequiredAsync())
+        {
+            Nav.NavigateTo("/setup");
+            return;
+        }
+        _username = Prefs.RememberedUsername ?? "";
+        _remember = Prefs.RememberedUsername != null;
+        _ready = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_ready && !_focused)
+        {
+            _focused = true;
+            await JS.InvokeVoidAsync("b2b.focus", string.IsNullOrEmpty(_username) ? "login-user" : "login-pass");
+        }
+    }
+    private bool _focused;
+
+    private void CheckCaps(KeyboardEventArgs e)
+    {
+        // A capital letter typed without Shift means Caps Lock is on.
+        if (e.Key.Length == 1 && char.IsLetter(e.Key[0]))
+            _capsOn = char.IsUpper(e.Key[0]) != e.ShiftKey;
+    }
+
+    private async Task SignIn()
+    {
+        _error = null;
+        _info = null;
+        if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrEmpty(_password))
+        {
+            _error = "Please enter your username and password.";
+            return;
+        }
+        _busy = true;
+        try
+        {
+            var result = await Auth.LoginAsync(_username, _password, _remember);
+            switch (result)
+            {
+                case LoginResult.Success:
+                    Nav.NavigateTo(Auth.Can(Perm.Dashboard) ? "/" : "/pos");
+                    return;
+                case LoginResult.Disabled:
+                    _error = "This account is disabled. Please contact your administrator.";
+                    break;
+                case LoginResult.LockedOut:
+                    _error = $"Too many failed attempts. Please wait {Auth.LockSecondsLeft} seconds and try again.";
+                    break;
+                default:
+                    _error = "Invalid username or password. Please try again.";
+                    break;
+            }
+            _password = "";
+            await JS.InvokeVoidAsync("b2b.focus", "login-pass");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    // ───────────── Forgot password ─────────────
+    private async Task OpenForgot()
+    {
+        _error = null;
+        _info = null;
+        _fUser = _username;
+        _fAnswer = _fNew = _fConfirm = "";
+        _fQuestion = null;
+        _fError = null;
+        _forgotStep = 1;
+        StateHasChanged();
+        await Task.Delay(50);
+        await JS.InvokeVoidAsync("b2b.focus", "fp-user");
+    }
+
+    private void CloseForgot() => _forgotStep = 0;
+
+    private async Task ForgotUserKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await FindQuestion();
+    }
+
+    private async Task FindQuestion()
+    {
+        _busy = true;
+        var (question, error) = await Auth.GetSecurityQuestionAsync(_fUser);
+        _busy = false;
+        _fError = error;
+        if (question == null) return;
+        _fQuestion = question;
+        _forgotStep = 2;
+        StateHasChanged();
+        await Task.Delay(50);
+        await JS.InvokeVoidAsync("b2b.focus", "fp-answer");
+    }
+
+    private async Task ResetPassword()
+    {
+        _busy = true;
+        _fError = await Auth.ResetPasswordWithAnswerAsync(_fUser, _fAnswer, _fNew, _fConfirm);
+        _busy = false;
+        if (_fError != null) return;
+
+        _forgotStep = 0;
+        _username = _fUser.Trim().ToLowerInvariant();
+        _password = "";
+        _info = "Your password was reset. You can now sign in with your new password.";
+    }
+}

@@ -1,0 +1,60 @@
+@inject AuthService Auth
+@inject ToastService Toast
+
+@* Set or change the signed-in user's security question. Forced=true on first login (cannot be skipped). *@
+<Modal Title="@(Forced ? "Set Up Your Security Question" : "Change Security Question")" Icon="key" ShowClose="!Forced" OnClose="OnClose">
+    <ChildContent>
+        @if (Forced)
+        {
+            <div class="note"><Icon Name="info" />Choose a security question so you can reset your password yourself if you ever forget it.</div>
+        }
+        @if (_error != null)
+        {
+            <div class="form-error"><Icon Name="alert-circle" />@_error</div>
+        }
+        <div class="form-grid">
+            <SecurityQuestionPicker @bind-Question="_question" @bind-Answer="_answer" />
+            <div class="fg full">
+                <label>Your Current Password <span class="req">*</span></label>
+                <input type="password" autocomplete="current-password" @bind="_password" />
+                <span class="hint">To confirm it's really you.</span>
+            </div>
+        </div>
+    </ChildContent>
+    <Footer>
+        @if (Forced)
+        {
+            <button class="btn ghost" @onclick="OnSignOut">Sign out</button>
+        }
+        else
+        {
+            <button class="btn ghost" @onclick="OnClose">Cancel</button>
+        }
+        <button class="btn primary" disabled="@_busy" @onclick="Save"><Icon Name="check" />Save</button>
+    </Footer>
+</Modal>
+
+@code {
+    [Parameter] public bool Forced { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+    [Parameter] public EventCallback OnSignOut { get; set; }
+
+    private string _question = "";
+    private string _answer = "";
+    private string _password = "";
+    private string? _error;
+    private bool _busy;
+
+    protected override void OnInitialized() => _question = Auth.CurrentUser?.SecurityQuestion ?? "";
+
+    private async Task Save()
+    {
+        _busy = true;
+        _error = await Auth.SetSecurityQuestionAsync(_password, _question, _answer);
+        _busy = false;
+        if (_error != null) return;
+        Toast.Success("Your security question was saved.");
+        await OnSaved.InvokeAsync();
+    }
+}

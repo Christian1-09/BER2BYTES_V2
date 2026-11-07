@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    DOMAIN LAYER (innermost)
+    Business entities and enums only. No database, UI or file code, and no NuGet packages.
+    Every other project depends on this one; this one depends on nothing.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Ber2Bytes.Domain</RootNamespace>
+  </PropertyGroup>
+
+</Project>
